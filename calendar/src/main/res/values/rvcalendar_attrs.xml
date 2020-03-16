@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CalendarView">
+        <attr name="rangeMode" format="boolean" />
+        <attr name="from" format="string" />
+        <attr name="to" format="string" />
+        <attr name="dateEnableTextColor" format="reference" />
+        <attr name="dateDisableTextColor" format="reference" />
+        <attr name="rangeTextColor" format="reference" />
+        <attr name="selectedTextColor" format="reference" />
+        <attr name="rangeBackgroundColor" format="reference" />
+        <attr name="rangeSelectBackgroundColor" format="reference" />
+        <attr name="enabledFrom" format="string" />
+        <attr name="enabledTo" format="string" />
+    </declare-styleable>
+
+    <attr name="scrollCalendarStyleAttr" format="reference" />
+</resources>
