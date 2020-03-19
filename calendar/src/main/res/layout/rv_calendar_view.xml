@@ -10,11 +10,9 @@
         android:id="@+id/calendarWeekRv"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="17dp"
-        android:layout_marginEnd="17dp"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/calendarRv"
+        app:layout_constraintStart_toStartOf="@+id/calendarRv"
         app:layout_constraintTop_toTopOf="parent"
         app:spanCount="7"
         tools:itemCount="7"
@@ -24,8 +22,6 @@
         android:id="@+id/calendarRv"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="17dp"
-        android:layout_marginEnd="17dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -36,5 +32,18 @@
         tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         tools:listitem="@layout/item_day"
         tools:spanCount="7" />
+
+    <com.leon.calendar.stickyitemdecoration.StickyHeadContainer
+        android:id="@+id/shc"
+        app:layout_constraintEnd_toEndOf="@+id/calendarRv"
+        app:layout_constraintStart_toStartOf="@+id/calendarRv"
+        app:layout_constraintTop_toTopOf="@+id/calendarRv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content">
+
+        <include
+            layout="@layout/item_date_label"/>
+
+    </com.leon.calendar.stickyitemdecoration.StickyHeadContainer>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

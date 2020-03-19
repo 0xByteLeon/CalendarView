@@ -11,15 +11,19 @@ import android.widget.FrameLayout
 import androidx.annotation.AttrRes
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.apkfuns.logutils.LogUtils
 import com.chad.library.adapter.base.BaseMultiItemQuickAdapter
 import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
+import com.leon.calendar.stickyitemdecoration.FullSpanUtil
+import com.leon.calendar.stickyitemdecoration.OnStickyChangeListener
+import com.leon.calendar.stickyitemdecoration.StickyHeadContainer
+import com.leon.calendar.stickyitemdecoration.StickyItemDecoration
 import kotlinx.android.synthetic.main.item_date_label.view.*
 import kotlinx.android.synthetic.main.item_day.view.*
 import kotlinx.android.synthetic.main.rv_calendar_view.view.*
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 /**
  * @time:2020/3/13 16:53
@@ -63,6 +67,9 @@ open class CalendarView : FrameLayout {
         getPaint().setStyle(Paint.Style.FILL_AND_STROKE);
     }
 
+    private val MONTHLABEL = 1
+    private val DAY_LABEL = 0
+
     val adapter = object : BaseMultiItemQuickAdapter<DayEntity, BaseViewHolder>() {
         init {
             addItemType(
@@ -75,11 +82,32 @@ open class CalendarView : FrameLayout {
             )
         }
 
+        override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+            super.onAttachedToRecyclerView(recyclerView)
+            FullSpanUtil.onAttachedToRecyclerView(
+                recyclerView,
+                this,
+                MONTHLABEL
+            )
+        }
+
+        override fun onViewAttachedToWindow(holder: BaseViewHolder) {
+            super.onViewAttachedToWindow(holder)
+            FullSpanUtil.onViewAttachedToWindow(
+                holder,
+                this,
+                MONTHLABEL
+            )
+        }
 
         override fun convert(helper: BaseViewHolder, item: DayEntity) {
             when (item.itemType) {
-                1 -> {
+                MONTHLABEL -> {
                     helper.itemView.monthLabelTv.text = item.displayStr
+                    val params = helper.itemView.monthLabelTv.layoutParams as MarginLayoutParams
+                    params.marginStart = calendarRv.width/14
+                    params.marginEnd = calendarRv.width/14
+                    helper.itemView.monthLabelTv.layoutParams = params
                 }
                 else -> {
                     setText(helper, item)
@@ -200,10 +228,48 @@ open class CalendarView : FrameLayout {
             }
 
         }
-        adapter.setNewData(getData(config.from, config.to))
+
+
+
         view.calendarRv.layoutManager = layoutManager
         view.calendarRv.adapter = adapter
+        view.calendarRv.background = background
+
+        view.shc.setDataCallback(object : StickyHeadContainer.DataCallback {
+            override fun onDataChange(pos: Int) {
+                val item = adapter.data.get(pos)
+                val params = view.shc.monthLabelTv.layoutParams as MarginLayoutParams
+                params.marginStart = calendarRv.width/14
+                params.marginEnd = calendarRv.width/14
+                view.shc.monthLabelTv.monthLabelTv.layoutParams = params
+                view.shc.monthLabelTv.text = item.displayStr
+            }
+        })
+
+        view.shc.background = background
+        view.calendarRv.addItemDecoration(
+            StickyItemDecoration(
+                view.shc,
+                MONTHLABEL
+            ).apply {
+                setOnStickyChangeListener(object : OnStickyChangeListener {
+
+                    override fun onScrollable(offset: Int) {
+                        shc.scrollChild(offset);
+                        shc.setVisibility(View.VISIBLE);
+                    }
+
+                    override fun onInVisible() {
+                        shc.reset();
+                        shc.setVisibility(View.INVISIBLE);
+                    }
+                })
+            }
+        )
+
+        adapter.setNewData(getData(config.from, config.to))
         addView(view)
+
     }
 
     private fun initConfig(context: Context, attrs: AttributeSet?) {
@@ -255,7 +321,8 @@ open class CalendarView : FrameLayout {
     }
 
     private fun initWeekView(view: View) {
-        view.findViewById<RecyclerView>(R.id.calendarWeekRv).adapter =
+        view.calendarWeekRv.background = background
+        view.calendarWeekRv.adapter =
             object : BaseQuickAdapter<String, BaseViewHolder>(
                 R.layout.item_week,
                 mutableListOf(
@@ -285,18 +352,11 @@ open class CalendarView : FrameLayout {
             set(Calendar.DAY_OF_MONTH, getActualMinimum(Calendar.DAY_OF_MONTH))
         }
 
-        LogUtils.d(fromCalendar)
-
-        LogUtils.d("from ${fromCalendar.get(Calendar.DAY_OF_WEEK)}")
-
 
         val toCalendar = Calendar.getInstance().apply {
             timeInMillis = to
             set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
         }
-
-        LogUtils.d("to  ${toCalendar[Calendar.DAY_OF_WEEK]}")
-
 
         val realFrom = fromCalendar.timeInMillis
         val realTo = toCalendar.timeInMillis
@@ -307,8 +367,7 @@ open class CalendarView : FrameLayout {
             }
 
             val currentDay =
-                DayEntity(0, timeStamp)
-            LogUtils.d(currentDay)
+                DayEntity(DAY_LABEL, timeStamp)
 
             //当月第一天
             if (calendar[Calendar.DAY_OF_MONTH] == calendar.getActualMinimum(Calendar.DAY_OF_MONTH)) {
@@ -326,7 +385,7 @@ open class CalendarView : FrameLayout {
                         for (i in previousDay.dayOfWeek + 1..Calendar.SATURDAY) {
                             val blockDay =
                                 DayEntity(
-                                    0,
+                                    DAY_LABEL,
                                     0
                                 )
                             data.add(blockDay)
@@ -336,18 +395,17 @@ open class CalendarView : FrameLayout {
 
                 val monthLabel =
                     DayEntity(
-                        1,
+                        MONTHLABEL,
                         timeStamp
                     )
                 data.add(monthLabel)
 
-                LogUtils.d(currentDay)
                 if (currentDay.dayOfWeek != 1) {
                     //当月第一天根据星期排布，需要填补空白
                     for (i in 1 until currentDay.dayOfWeek) {
                         val blockDay =
                             DayEntity(
-                                0,
+                                DAY_LABEL,
                                 0
                             )
                         data.add(blockDay)

@@ -7,12 +7,14 @@
 
     <TextView
         android:id="@+id/monthLabelTv"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="18dp"
+        tools:layout_marginStart="18dp"
+        tools:layout_marginEnd="18dp"
         tools:text="2018年 4月"
         android:textColor="#ff282729"
         android:textSize="15sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
