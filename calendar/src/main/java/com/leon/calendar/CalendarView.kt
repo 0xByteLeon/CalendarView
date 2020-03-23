@@ -6,11 +6,16 @@ import android.graphics.Paint
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.OvalShape
 import android.util.AttributeSet
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.PopupWindow
 import androidx.annotation.AttrRes
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.apkfuns.logutils.LogUtils
 import com.chad.library.adapter.base.BaseMultiItemQuickAdapter
 import com.chad.library.adapter.base.BaseQuickAdapter
 import com.chad.library.adapter.base.viewholder.BaseViewHolder
@@ -18,9 +23,11 @@ import com.leon.calendar.stickyitemdecoration.FullSpanUtil
 import com.leon.calendar.stickyitemdecoration.OnStickyChangeListener
 import com.leon.calendar.stickyitemdecoration.StickyHeadContainer
 import com.leon.calendar.stickyitemdecoration.StickyItemDecoration
+import com.leon.calendar.utils.SizeUtils
 import kotlinx.android.synthetic.main.item_date_label.view.*
 import kotlinx.android.synthetic.main.item_day.view.*
 import kotlinx.android.synthetic.main.rv_calendar_view.view.*
+import kotlinx.android.synthetic.main.time_range_pop.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -105,15 +112,17 @@ open class CalendarView : FrameLayout {
                 MONTHLABEL -> {
                     helper.itemView.monthLabelTv.text = item.displayStr
                     val params = helper.itemView.monthLabelTv.layoutParams as MarginLayoutParams
-                    params.marginStart = calendarRv.width/14
-                    params.marginEnd = calendarRv.width/14
+                    params.marginStart = calendarRv.width / 14
+                    params.marginEnd = calendarRv.width / 14
                     helper.itemView.monthLabelTv.layoutParams = params
                 }
                 else -> {
                     setText(helper, item)
                     setItemBg(helper, item)
                     helper.itemView.dayTv.setOnClickListener {
+                        popupWindow?.dismiss()
                         if (config.inEnabelRange(item.timeStamp)) {
+                            dateSelectedListener?.onDateSelected(item.timeStamp)
                             if (config.selectedRange()) {
                                 config.resetRange()
                                 config.startTime = item.timeStamp
@@ -125,23 +134,32 @@ open class CalendarView : FrameLayout {
                             } else {
                                 if (config.startTime < item.timeStamp) {
                                     config.endTime = item.timeStamp
+                                    showDeviceDetailPop(
+                                        helper.itemView,
+                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L)}天"
+                                    )
                                     notifyDataSetChanged()
                                     dateRangeSelectedListener?.onRangeSelected(
                                         config.startTime,
                                         config.endTime
                                     )
+
                                 }
                                 if (config.startTime > item.timeStamp) {
                                     config.endTime = config.startTime
                                     config.startTime = item.timeStamp
+                                    showDeviceDetailPop(
+                                        helper.itemView,
+                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L)}天"
+                                    )
                                     notifyDataSetChanged()
                                     dateRangeSelectedListener?.onRangeSelected(
                                         config.startTime,
                                         config.endTime
                                     )
+
                                 }
                             }
-                            dateSelectedListener?.onDateSelected(item.timeStamp)
                         }
                         dateClickListener?.onDateClick(item.timeStamp)
                     }
@@ -239,8 +257,8 @@ open class CalendarView : FrameLayout {
             override fun onDataChange(pos: Int) {
                 val item = adapter.data.get(pos)
                 val params = view.shc.monthLabelTv.layoutParams as MarginLayoutParams
-                params.marginStart = calendarRv.width/14
-                params.marginEnd = calendarRv.width/14
+                params.marginStart = calendarRv.width / 14
+                params.marginEnd = calendarRv.width / 14
                 view.shc.monthLabelTv.monthLabelTv.layoutParams = params
                 view.shc.monthLabelTv.text = item.displayStr
             }
@@ -345,7 +363,7 @@ open class CalendarView : FrameLayout {
     private fun getData(from: Long, to: Long): MutableList<DayEntity> {
 
         val data = mutableListOf<DayEntity>()
-        check((to - from) >= 24 * 60 * 60 * 1000)
+        check(to >= from)
 
         val fromCalendar = Calendar.getInstance().apply {
             timeInMillis = from
@@ -420,13 +438,14 @@ open class CalendarView : FrameLayout {
     }
 
     fun setDateRange(from: Long, to: Long) {
-        check(from > 0 && to > 0 && from < to)
+        check(from > 0 && to > 0 && from <= to)
         config.from = from
         config.to = to
+        setEnableRange(from, to)
     }
 
     fun setEnableRange(start: Long, end: Long) {
-        check(start > 0 && end > 0 && end > start && start > config.from && end < config.to)
+        check(start > 0 && end > 0 && end >= start && start >= config.from && end <= config.to)
         config.enabledStart = start
         config.enabledEnd = end
     }
@@ -437,7 +456,7 @@ open class CalendarView : FrameLayout {
     }
 
     fun setSelectedRang(start: Long, end: Long) {
-        check(start > 0 && end > 0 && end > start && start >= config.enabledStart && end <= config.enabledEnd) {
+        check(start > 0 && end > 0 && end >= start && start >= config.enabledStart && end <= config.enabledEnd) {
             "参数非法"
         }
         config.startTime = start
@@ -452,5 +471,54 @@ open class CalendarView : FrameLayout {
             resetSelectedRange()
         }
         adapter.setNewData(getData(config.from, config.to))
+    }
+
+
+    private var popupWindow: PopupWindow? = null
+    fun showDeviceDetailPop(view: View, text: String) {
+        popupWindow?.dismiss()
+        val popView =
+            LayoutInflater.from(context).inflate(R.layout.time_range_pop, null)
+        popView.textView.text = text
+        popupWindow = PopupWindow(
+            popView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            false
+        )
+        popupWindow?.isOutsideTouchable = true
+        popupWindow?.isFocusable = false
+
+
+        val popWidth = SizeUtils.getMeasuredWidth(popView)
+        val anchorWidth = SizeUtils.getMeasuredWidth(view)
+
+        LogUtils.d("popWidth : $popWidth  anchorWidth : $anchorWidth ")
+
+
+        val position = IntArray(2)
+        view.getLocationInWindow(position)
+        popupWindow?.showAtLocation(
+            view,
+            Gravity.NO_GRAVITY,
+            position[0] - popWidth / 2 + calendarRv.measuredWidth / 14,
+            position[1] - SizeUtils.getMeasuredHeight(view) + SizeUtils.dipToPx(
+                context,
+                8f
+            )
+        )
+
+//
+//        val xOffset = (popWidth - anchorWidth)
+//        popupWindow?.showAsDropDown(
+//            view,
+//            xOffset,
+//            -SizeUtils.getMeasuredHeight(view) - SizeUtils.getMeasuredHeight(popView) + SizeUtils.dipToPx(
+//                context,
+//                8f
+//            ),
+//            Gravity.TOP
+//        )
+
     }
 }
