@@ -136,7 +136,7 @@ open class CalendarView : FrameLayout {
                                     config.endTime = item.timeStamp
                                     showDeviceDetailPop(
                                         helper.itemView,
-                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L)}天"
+                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L) + 1}天"
                                     )
                                     notifyDataSetChanged()
                                     dateRangeSelectedListener?.onRangeSelected(
@@ -150,7 +150,7 @@ open class CalendarView : FrameLayout {
                                     config.startTime = item.timeStamp
                                     showDeviceDetailPop(
                                         helper.itemView,
-                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L)}天"
+                                        "共${(config.endTime - config.startTime) / (24 * 60 * 60 * 1000L) + 1}天"
                                     )
                                     notifyDataSetChanged()
                                     dateRangeSelectedListener?.onRangeSelected(

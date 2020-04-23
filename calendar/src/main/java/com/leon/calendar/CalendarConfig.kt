@@ -1,6 +1,7 @@
 package com.leon.calendar
 
 import android.graphics.Color
+import java.util.*
 
 /**
  * @time:2020/3/13 16:43
@@ -42,11 +43,11 @@ class CalendarConfig {
     }
 
     fun isStartRange(timestamp: Long): Boolean {
-        return timestamp == startTime
+        return isSameDay(timestamp, startTime)
     }
 
     fun isEndRange(timestamp: Long): Boolean {
-        return timestamp == endTime
+        return isSameDay(timestamp, endTime)
     }
 
     fun resetRange() {
@@ -56,5 +57,14 @@ class CalendarConfig {
 
     fun selectedRange(): Boolean {
         return startTime >= 0 && endTime >= 0
+    }
+
+    private fun isSameDay(first: Long, second: Long): Boolean {
+        val calendar1 = Calendar.getInstance().apply { timeInMillis = first }
+        val calendar2 = Calendar.getInstance().apply { timeInMillis = second }
+
+        return calendar1.get(Calendar.YEAR) == calendar2.get(Calendar.YEAR) &&
+                calendar1.get(Calendar.MONTH) == calendar2.get(Calendar.MONTH) &&
+                calendar1.get(Calendar.DAY_OF_MONTH) == calendar2.get(Calendar.YEAR)
     }
 }
